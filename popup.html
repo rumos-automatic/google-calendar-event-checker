@@ -1,0 +1,2234 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 400px;
+            height: 600px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #ffffff;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+            text-rendering: optimizeLegibility;
+        }
+
+        .container {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Loading State */
+        .loading {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #666;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #1a73e8;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .button-spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid currentColor;
+            border-top-color: transparent;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+            vertical-align: middle;
+            animation: button-spinner-spin 0.8s linear infinite;
+        }
+
+        @keyframes button-spinner-spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Sign In View */
+        .view {
+            display: none;
+            height: 100%;
+        }
+
+        .view.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sign-in-view {
+            align-items: center;
+            padding: 30px 40px;
+            text-align: center;
+            position: relative;
+            justify-content: center;
+        }
+
+        .sign-in-view h2 {
+            color: #1a73e8;
+            margin-bottom: 15px;
+            font-size: 24px;
+        }
+
+        .sign-in-view p {
+            color: #5f6368;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .sign-in-premium-message {
+            font-size: 16px;
+            font-weight: 500;
+            color: #202124;
+        }
+
+        .sign-in-free-note {
+            width: calc(100% - 48px);
+            max-width: 360px;
+            border-radius: 16px;
+            padding: 16px 18px;
+            background: #f1f8ff;
+            border: 1px solid rgba(26, 115, 232, 0.2);
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+            font-size: 14px;
+            color: #1f2937;
+            text-align: left;
+            margin: 0;
+            position: absolute;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 5;
+        }
+
+        .sign-in-free-note a {
+            color: #1a73e8;
+            font-weight: 500;
+            text-decoration: none;
+        }
+
+        .sign-in-free-note a:hover {
+            text-decoration: underline;
+        }
+
+        .permission-toggle-wrapper {
+            position: absolute;
+            bottom: 24px;
+            right: 24px;
+            display: flex;
+            align-items: flex-end;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .sign-in-info {
+            position: absolute;
+            bottom: 54px;
+            right: 0;
+            transform: translateY(8px);
+            padding: 16px 18px;
+            background: #ffffff;
+            border-radius: 14px;
+            text-align: left;
+            border: 1px solid rgba(26, 115, 232, 0.18);
+            width: 280px;
+            color: #1f2937;
+            box-shadow: 0 18px 36px rgba(15, 23, 42, 0.18);
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+            z-index: 50;
+        }
+
+        .sign-in-info::after {
+            content: '';
+            position: absolute;
+            bottom: -9px;
+            right: 15px;
+            width: 16px;
+            height: 8px;
+            background: #ffffff;
+            clip-path: polygon(50% 100%, 0 0, 100% 0);
+            border-left: 1px solid rgba(26, 115, 232, 0.18);
+            border-right: 1px solid rgba(26, 115, 232, 0.18);
+            border-top: 1px solid #fff;
+        }
+
+        .sign-in-info.show {
+            opacity: 1;
+            pointer-events: auto;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .permission-toggle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1px solid rgba(26, 115, 232, 0.35);
+            background: rgba(225, 236, 255, 0.45);
+            color: #1a73e8;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+        }
+
+        .permission-toggle:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(26, 115, 232, 0.2);
+            background: rgba(209, 226, 255, 0.65);
+        }
+
+        .permission-toggle:focus-visible {
+            outline: 2px solid rgba(26, 115, 232, 0.6);
+            outline-offset: 2px;
+        }
+
+        .sign-in-info h3 {
+            margin: 0 0 12px;
+            font-size: 15px;
+            color: #1a73e8;
+            font-weight: 600;
+        }
+
+        .permission-subtitle {
+            margin: 0 0 12px;
+            font-size: 13px;
+            color: #4b5563;
+            line-height: 1.5;
+        }
+
+        .permission-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 12px;
+        }
+
+        .permission-item {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            font-size: 13px;
+            color: #394150;
+            line-height: 1.4;
+            margin-bottom: 10px;
+        }
+
+        .permission-item span {
+            font-size: 16px;
+            line-height: 1;
+        }
+
+        .permission-item strong {
+            color: #111827;
+            display: block;
+            font-size: 13px;
+        }
+
+        .sign-in-footnote {
+            font-size: 12px;
+            color: #4b5563;
+            margin: 0;
+        }
+
+        .sign-in-view .gsi-material-button {
+            margin-top: 10px;
+        }
+
+        .gsi-material-button {
+            -moz-user-select: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+            -webkit-appearance: none;
+            background-color: #f2f2f2;
+            background-image: none;
+            border: none;
+            -webkit-border-radius: 20px;
+            border-radius: 20px;
+            -webkit-box-sizing: border-box;
+            box-sizing: border-box;
+            color: #1f1f1f;
+            cursor: pointer;
+            font-family: 'Roboto', arial, sans-serif;
+            font-size: 14px;
+            height: 40px;
+            letter-spacing: 0.25px;
+            outline: none;
+            overflow: hidden;
+            padding: 0 12px;
+            position: relative;
+            text-align: center;
+            -webkit-transition: background-color .218s, border-color .218s, box-shadow .218s;
+            transition: background-color .218s, border-color .218s, box-shadow .218s;
+            vertical-align: middle;
+            white-space: nowrap;
+            width: auto;
+            max-width: 400px;
+            min-width: min-content;
+        }
+
+        .gsi-material-button .gsi-material-button-icon {
+            height: 20px;
+            margin-right: 12px;
+            min-width: 20px;
+            width: 20px;
+        }
+
+        .gsi-material-button .gsi-material-button-content-wrapper {
+            -webkit-align-items: center;
+            align-items: center;
+            display: flex;
+            -webkit-flex-direction: row;
+            flex-direction: row;
+            -webkit-flex-wrap: nowrap;
+            flex-wrap: nowrap;
+            height: 100%;
+            justify-content: space-between;
+            position: relative;
+            width: 100%;
+        }
+
+        .gsi-material-button .gsi-material-button-contents {
+            -webkit-flex-grow: 1;
+            flex-grow: 1;
+            font-family: 'Roboto', arial, sans-serif;
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            vertical-align: top;
+        }
+
+        .gsi-material-button .gsi-material-button-state {
+            -webkit-transition: opacity .218s;
+            transition: opacity .218s;
+            bottom: 0;
+            left: 0;
+            opacity: 0;
+            position: absolute;
+            right: 0;
+            top: 0;
+        }
+
+        .gsi-material-button:disabled {
+            cursor: default;
+            background-color: #ffffff61;
+        }
+
+        .gsi-material-button:disabled .gsi-material-button-state {
+            background-color: #1f1f1f1f;
+        }
+
+        .gsi-material-button:disabled .gsi-material-button-contents {
+            opacity: 38%;
+        }
+
+        .gsi-material-button:disabled .gsi-material-button-icon {
+            opacity: 38%;
+        }
+
+        .gsi-material-button:not(:disabled):active .gsi-material-button-state,
+        .gsi-material-button:not(:disabled):focus .gsi-material-button-state {
+            background-color: #001d35;
+            opacity: 12%;
+        }
+
+        .gsi-material-button:not(:disabled):hover {
+            -webkit-box-shadow: 0 1px 2px 0 rgba(60, 64, 67, .30), 0 1px 3px 1px rgba(60, 64, 67, .15);
+            box-shadow: 0 1px 2px 0 rgba(60, 64, 67, .30), 0 1px 3px 1px rgba(60, 64, 67, .15);
+        }
+
+        .gsi-material-button:not(:disabled):hover .gsi-material-button-state {
+            background-color: #001d35;
+            opacity: 8%;
+        }
+
+        /* Carousel View */
+        .carousel-view {
+            position: relative;
+            flex: 1;
+            padding: 0;
+            margin: 0;
+            background: #000000;
+            color: #ffffff;
+            overflow: hidden;
+        }
+
+        .carousel-frame {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .carousel-track {
+            display: flex;
+            height: 100%;
+            width: 100%;
+            transition: transform 0.35s ease;
+        }
+
+        .carousel-slide {
+            position: relative;
+            min-width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .carousel-slide video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #000000;
+        }
+
+        .carousel-slide-cta {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 70px;
+        }
+
+        .carousel-cta-content {
+            max-width: 340px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .carousel-cta-content .carousel-label {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .carousel-cta-content .carousel-title {
+            font-size: 24px;
+            color: #ffffff;
+        }
+
+        .carousel-cta-content .carousel-text {
+            color: rgba(255, 255, 255, 0.95);
+            line-height: 1.6;
+        }
+
+        .carousel-overlay {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 32px 24px 40px;
+            background: linear-gradient(0deg, rgba(0, 0, 0, 0.88) 0%, rgba(0, 0, 0, 0.6) 45%, transparent 100%);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+        }
+
+        .carousel-overlay>* {
+            pointer-events: auto;
+        }
+
+        .carousel-label {
+            font-size: 12px;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: rgba(226, 232, 240, 0.84);
+        }
+
+        .carousel-title {
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            margin: 0;
+            color: #ffffff;
+        }
+
+        .carousel-text {
+            margin: 0;
+            font-size: 14px;
+            line-height: 1.5;
+            color: rgba(226, 232, 240, 0.92);
+        }
+
+        .carousel-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 36px;
+            height: 36px;
+            border-radius: 999px;
+            border: none;
+            background: rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+            font-size: 20px;
+            font-weight: 300;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            z-index: 100;
+            backdrop-filter: blur(8px);
+        }
+
+        .carousel-close:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        .carousel-dots {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 50;
+        }
+
+        .carousel-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            border: none;
+            background: rgba(255, 255, 255, 0.4);
+            cursor: pointer;
+            padding: 0;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .carousel-dot.active {
+            background: #ffffff;
+            transform: scale(1.3);
+        }
+
+        .carousel-nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+            border-radius: 999px;
+            border: none;
+            background: rgba(0, 0, 0, 0.5);
+            color: #ffffff;
+            font-size: 24px;
+            font-weight: 300;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, opacity 0.2s;
+            z-index: 50;
+            backdrop-filter: blur(8px);
+        }
+
+        .carousel-nav-btn:hover:not(:disabled) {
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        .carousel-nav-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .carousel-nav-btn#carouselPrevBtn {
+            left: 16px;
+        }
+
+        .carousel-nav-btn#carouselNextBtn {
+            right: 16px;
+        }
+
+        .carousel-slide-cta~* .carousel-nav-btn#carouselNextBtn,
+        .carousel-slide:last-child.carousel-slide-cta~.carousel-nav-btn#carouselNextBtn {
+            display: none;
+        }
+
+        body:has(.carousel-slide-cta.active) .carousel-nav-btn#carouselNextBtn {
+            display: none;
+        }
+
+        .carousel-activate-btn {
+            border: none;
+            border-radius: 999px;
+            padding: 12px 20px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            background: linear-gradient(120deg, #facc15 0%, #f97316 100%);
+            color: #1c1917;
+            box-shadow: 0 10px 25px rgba(250, 204, 21, 0.35);
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 14px;
+        }
+
+        .carousel-activate-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 32px rgba(245, 158, 11, 0.4);
+        }
+
+        .carousel-trial-note {
+            margin: 10px 0 0 0;
+            font-size: 12px;
+            color: rgba(226, 232, 240, 0.75);
+            text-align: center;
+        }
+
+        .carousel-cta-content .carousel-trial-note {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* Events View */
+        .events-view {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Fixed Header */
+        .events-header {
+            background: #1a73e8;
+            color: white;
+            padding: 16px 20px;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .date-navigation {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding-right: 40px;
+            /* Make room for user options button */
+        }
+
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .current-date {
+            font-size: 18px;
+            font-weight: 500;
+            flex: 1;
+            text-align: center;
+        }
+
+        .events-count {
+            font-size: 13px;
+            opacity: 0.9;
+            text-align: center;
+        }
+
+        /* User Options Button in Header */
+        .header-actions {
+            position: absolute;
+            top: 16px;
+            right: 20px;
+            z-index: 10;
+        }
+
+        .user-options-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .user-options-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Events List */
+        .events-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+        }
+
+        .events-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .events-list::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .events-list::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+        .events-list::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        .event-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            transition: box-shadow 0.2s;
+        }
+
+        .event-item:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .event-checkbox-wrapper {
+            position: relative;
+            margin-right: 12px;
+            margin-top: 2px;
+        }
+
+        .event-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #1a73e8;
+        }
+
+        .event-checkbox:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .checkbox-loader {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #1a73e8;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: none;
+        }
+
+        .event-checkbox-wrapper.event-checkbox-loading .checkbox-loader {
+            display: block;
+        }
+
+        .event-checkbox-wrapper.event-checkbox-loading .event-checkbox {
+            opacity: 0;
+        }
+
+        .calendar-indicator {
+            width: 4px;
+            height: 100%;
+            border-radius: 2px;
+            margin-right: 12px;
+            flex-shrink: 0;
+            min-height: 40px;
+        }
+
+        .event-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .event-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #202124;
+            margin-bottom: 4px;
+            cursor: pointer;
+            word-wrap: break-word;
+            text-decoration: none;
+            min-height: 23px;
+            display: flex;
+            align-items: center;
+        }
+
+        .event-title:hover {
+            color: #1a73e8;
+            text-decoration: underline;
+        }
+
+        .event-title.completed {
+            color: #5f6368;
+        }
+
+        .event-time {
+            font-size: 13px;
+            color: #5f6368;
+        }
+
+        .calendar-name {
+            font-size: 12px;
+            color: #5f6368;
+            margin-top: 4px;
+        }
+
+        .no-events {
+            text-align: center;
+            padding: 60px 30px;
+            color: #5f6368;
+        }
+
+        .no-events-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .no-events-text {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .no-events-subtext {
+            font-size: 14px;
+        }
+
+        /* User Options View */
+        .user-options-view {
+            padding: 0;
+        }
+
+        .user-options-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .user-options-header-left {
+            display: flex;
+            align-items: center;
+            flex: 1;
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            margin-right: 15px;
+            color: #5f6368;
+        }
+
+        .user-options-title {
+            font-size: 20px;
+            font-weight: 500;
+            color: #202124;
+        }
+
+        .user-options-header-right {
+            position: relative;
+        }
+
+        .user-options-user-menu-btn {
+            background: none;
+            border: 1px solid #dadce0;
+            cursor: pointer;
+            font-size: 13px;
+            color: #5f6368;
+            padding: 6px 12px;
+            border-radius: 16px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            max-width: 180px;
+        }
+
+        .user-options-user-menu-btn:hover {
+            background: #f8f9fa;
+            border-color: #1a73e8;
+            color: #1a73e8;
+        }
+
+        .user-options-user-email {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-weight: 500;
+        }
+
+        .user-options-user-menu-icon {
+            font-size: 10px;
+            transition: transform 0.2s;
+        }
+
+        .user-options-user-menu-btn.open .user-options-user-menu-icon {
+            transform: rotate(180deg);
+        }
+
+        .user-options-user-dropdown {
+            position: absolute;
+            top: calc(100% + 4px);
+            right: 0;
+            background: #ffffff;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            min-width: 160px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-8px);
+            transition: all 0.2s;
+            z-index: 1000;
+        }
+
+        .user-options-user-dropdown.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .user-options-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            font-size: 14px;
+            color: #5f6368;
+            cursor: pointer;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            transition: all 0.15s;
+        }
+
+        .user-options-dropdown-item:first-child {
+            border-radius: 8px 8px 0 0;
+        }
+
+        .user-options-dropdown-item:last-child {
+            border-radius: 0 0 8px 8px;
+        }
+
+        .user-options-dropdown-item:hover {
+            background: #f8f9fa;
+            color: #202124;
+        }
+
+        .user-options-dropdown-item:active {
+            background: #e8eaed;
+        }
+
+        /* Tabs */
+        .tabs-container {
+            display: flex;
+            flex-direction: row;
+            flex: 1;
+            gap: 0;
+            overflow: hidden;
+        }
+
+        .tabs-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            border-right: 1px solid #e0e0e0;
+            padding: 8px;
+            background: #f8f9fa;
+            min-width: 56px;
+        }
+
+        .tab-button {
+            background: transparent;
+            border: none;
+            padding: 12px;
+            font-size: 20px;
+            color: #5f6368;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s;
+            position: relative;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tab-button:hover {
+            background: rgba(26, 115, 232, 0.08);
+            color: #1a73e8;
+        }
+
+        .tab-button.active {
+            background: rgba(26, 115, 232, 0.12);
+            color: #1a73e8;
+        }
+
+        .tab-button.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 24px;
+            background: #1a73e8;
+            border-radius: 0 2px 2px 0;
+        }
+
+        .tabs-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 20px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .tab-content-header {
+            font-size: 18px;
+            font-weight: 600;
+            color: #202124;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #5f6368;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .custom-slots-section {
+            margin-top: 32px;
+        }
+
+        .coming-soon-label {
+            font-size: 15px;
+            font-weight: 500;
+            color: #202124;
+            margin: 2px 0 10px;
+        }
+
+        .faq-section {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .faq-item {
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 0 16px 12px;
+            background: #fff;
+            box-shadow: 0 2px 6px rgba(32, 33, 36, 0.06);
+        }
+
+        .faq-item summary {
+            cursor: pointer;
+            list-style: none;
+            font-weight: 600;
+            font-size: 14px;
+            color: #1a1a1a;
+            padding: 14px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .faq-item summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .faq-item summary::after {
+            content: '\25BE';
+            margin-left: auto;
+            font-size: 30px;
+            color: #5f6368;
+            transition: transform 0.2s ease;
+        }
+
+        .faq-item[open] summary::after {
+            transform: rotate(-180deg);
+        }
+
+        .faq-answer {
+            font-size: 14px;
+            color: #3c4043;
+            line-height: 1.6;
+        }
+
+        .faq-answer strong {
+            color: #1a73e8;
+        }
+
+        .faq-answer a {
+            color: #1a73e8;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .faq-answer a:hover {
+            text-decoration: underline;
+        }
+
+        .faq-contact {
+            margin-top: 18px;
+            margin-bottom: 18px;
+            font-size: 14px;
+            color: #3c4043;
+            line-height: 1.5;
+        }
+
+        .faq-contact a {
+            color: #1a73e8;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .faq-contact a:hover {
+            text-decoration: underline;
+        }
+
+        .subscription-feedback {
+            margin-top: 14px;
+            font-size: 13px;
+            line-height: 1.5;
+            color: rgba(255, 255, 255, 0.95);
+        }
+
+        .subscription-card.free .subscription-feedback {
+            color: #202124;
+        }
+
+        .subscription-card.trial-ended .subscription-feedback {
+            color: inherit;
+        }
+
+        .subscription-feedback.trial-ended-note {
+            color: #312e81;
+            margin-top: 12px;
+        }
+
+        .subscription-feedback.below-card {
+            color: #202124;
+            margin-top: 12px;
+        }
+
+        .subscription-feedback a {
+            color: inherit;
+            font-weight: 600;
+            text-decoration: underline;
+        }
+
+
+        /* Security Tab */
+        .security-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        button.danger-secondary {
+            background: #fff;
+            color: #d93025;
+            border: 2px solid #d93025;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            width: 100%;
+            transition: all 0.2s;
+        }
+
+        button.danger-secondary:hover:not(:disabled) {
+            background: #d93025;
+            color: white;
+        }
+
+        button.danger-secondary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .calendars-list {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .calendars-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .calendars-list::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .calendars-list::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+        .calendar-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .calendar-item:last-child {
+            border-bottom: none;
+        }
+
+        .calendar-item:hover {
+            background: #f8f9fa;
+        }
+
+        .calendar-item input[type="checkbox"] {
+            margin-right: 12px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #1a73e8;
+        }
+
+        .calendar-color-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+
+        .calendar-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .calendar-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #202124;
+            margin-bottom: 2px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .calendar-role {
+            font-size: 12px;
+            color: #5f6368;
+        }
+
+        .calendar-primary-badge {
+            background: #e8f5e9;
+            color: #2e7d32;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin-left: 8px;
+            font-weight: 500;
+        }
+
+        .loading-calendars {
+            text-align: center;
+            padding: 20px;
+            color: #5f6368;
+            font-size: 14px;
+        }
+
+        .no-calendars {
+            text-align: center;
+            padding: 20px;
+            color: #5f6368;
+            font-size: 14px;
+        }
+
+        /* Buttons */
+        button.primary {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            width: 100%;
+            transition: background 0.2s;
+        }
+
+        button.primary:hover:not(:disabled) {
+            background: #1557b0;
+        }
+
+        button.primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        button.secondary {
+            background: #fff;
+            color: #5f6368;
+            border: 1px solid #dadce0;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            width: 100%;
+            transition: all 0.2s;
+        }
+
+        button.secondary:hover:not(:disabled) {
+            background: #f8f9fa;
+            border-color: #bdc1c6;
+        }
+
+        button.danger {
+            background: #d93025;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            width: 100%;
+            transition: background 0.2s;
+        }
+
+        button.danger:hover:not(:disabled) {
+            background: #b71c1c;
+        }
+
+        button.danger:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        button.danger.loading {
+            position: relative;
+            color: transparent;
+        }
+
+        button.danger.loading:disabled {
+            opacity: 1;
+        }
+
+        button.danger.loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 18px;
+            height: 18px;
+            margin-top: -9px;
+            margin-left: -9px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            border-top-color: #ffffff;
+            animation: button-loading-spin 0.8s linear infinite;
+        }
+
+        @keyframes button-loading-spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Subscription Status */
+        .subscription-section {
+            margin-bottom: 30px;
+        }
+
+        .subscription-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 20px;
+            color: white;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .subscription-card.free {
+            background: linear-gradient(135deg, #e0e0e0 0%, #bdbdbd 100%);
+        }
+
+        .subscription-card.trial {
+            background: linear-gradient(135deg, #f97316 0%, #fb923c 60%, #fdba74 100%);
+        }
+
+        .subscription-card.trial-offer {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.92) 0%, rgba(96, 165, 250, 0.95) 100%);
+        }
+
+        .subscription-card.trial-ended {
+            background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 45%, #fbcfe8 100%);
+            color: #312e81;
+        }
+
+        .subscription-card.trial-ended .subscription-status-badge {
+            background: rgba(255, 255, 255, 0.7);
+            color: inherit;
+        }
+
+        .subscription-card.canceled {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 50%, #fecaca 100%);
+            color: #7f1d1d;
+        }
+
+        .subscription-card.canceled .subscription-status-badge {
+            background: rgba(255, 255, 255, 0.7);
+            color: inherit;
+        }
+
+        .subscription-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .subscription-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .subscription-plan {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .subscription-expiry {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        .subscription-hint {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 10px;
+        }
+
+        .upgrade-btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 12px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .upgrade-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .manage-subscription-btn {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 12px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .manage-subscription-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            background: #1765cc;
+        }
+
+        .subscription-loading {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            color: #5f6368;
+            font-size: 14px;
+        }
+
+        .subscription-error {
+            padding: 12px;
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            border-radius: 4px;
+            color: #e65100;
+            font-size: 13px;
+        }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.3s ease;
+            max-width: 360px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .notification.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .notification.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+        }
+
+        .notification.error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ffcdd2;
+        }
+
+        .notification.info {
+            background: #e3f2fd;
+            color: #1565c0;
+            border: 1px solid #bbdefb;
+        }
+
+        /* Premium View */
+        .premium-view {
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .premium-header {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            z-index: 10;
+        }
+
+        .premium-options-btn {
+            background: rgba(0, 0, 0, 0.05);
+            border: none;
+            color: #5f6368;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .premium-options-btn:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .free-plan-section {
+            padding: 24px 24px 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .free-plan-header {
+            font-size: 14px;
+            color: #5f6368;
+            margin-bottom: 6px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .free-plan-text {
+            font-size: 14px;
+            color: #5f6368;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .free-plan-text a {
+            color: #1a73e8;
+            font-weight: 500;
+            text-decoration: none;
+        }
+
+        .free-plan-text a:hover {
+            text-decoration: underline;
+        }
+
+        .premium-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 24px;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .premium-content {
+            width: 100%;
+            max-width: 340px;
+        }
+
+        .premium-title {
+            color: white;
+            margin-bottom: 12px;
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .premium-description {
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 24px;
+            line-height: 1.5;
+            font-size: 15px;
+        }
+
+        .premium-features {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .premium-feature {
+            display: flex;
+            align-items: flex-start;
+            text-align: left;
+            margin-bottom: 14px;
+        }
+
+        .premium-feature:last-child {
+            margin-bottom: 0;
+        }
+
+        .feature-icon {
+            font-size: 22px;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .feature-text {
+            flex: 1;
+        }
+
+        .feature-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 3px;
+            font-size: 14px;
+        }
+
+        .feature-desc {
+            font-size: 12px;
+            color: #5f6368;
+            line-height: 1.4;
+        }
+
+        .premium-cta-btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-bottom: 12px;
+        }
+
+        .premium-cta-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+        }
+
+        .premium-footnote {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.8);
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        .premium-carousel-btn:active {
+            transform: translateY(0);
+        }
+
+        .premium-refresh-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            transition: background 0.2s, border 0.2s;
+        }
+
+        .premium-refresh-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .premium-refresh-btn:active {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .premium-footer {
+            margin-top: 14px;
+        }
+
+        .premium-link {
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            color: white;
+            font-size: 13px;
+            cursor: pointer;
+            padding: 10px 16px;
+            text-decoration: none;
+            border-radius: 6px;
+            display: inline-block;
+            transition: background 0.2s;
+        }
+
+        .premium-link:hover {
+            background: rgba(255, 255, 255, 0.25);
+            text-decoration: none;
+        }
+
+        .premium-link:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .premium-link.loading {
+            position: relative;
+            color: transparent;
+        }
+
+        .premium-link.loading:disabled {
+            opacity: 1;
+        }
+
+        .premium-link.loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 16px;
+            height: 16px;
+            margin-top: -8px;
+            margin-left: -8px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            border-top-color: #ffffff;
+            animation: button-loading-spin 0.8s linear infinite;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Loading State -->
+        <div id="loadingState" class="loading">
+            <div class="spinner"></div>
+            <div>読み込み中...</div>
+        </div>
+
+        <!-- Sign In View -->
+        <div id="signInView" class="view sign-in-view">
+            <div class="sign-in-free-note">
+                <strong>無料プランは無料のままです。</strong>
+                サインインなしですぐに使用できます -
+                <a href="https://calcheckr.com/#how-it-works" target="_blank" rel="noreferrer">使い方を見る</a>。
+                プレミアム機能を試したい場合のみサインインしてください。
+            </div>
+            <h2>📅 カレンダーチェッカー</h2>
+            <p class="sign-in-premium-message">
+                サインインして、カレンダー操作を簡単にする<strong>プレミアム機能</strong>をお試しください。
+            </p>
+            <button id="signInBtn" class="gsi-material-button">
+                <div class="gsi-material-button-state"></div>
+                <div class="gsi-material-button-content-wrapper">
+                    <div class="gsi-material-button-icon">
+                        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"
+                            xmlns:xlink="http://www.w3.org/1999/xlink" style="display: block;">
+                            <path fill="#EA4335"
+                                d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z">
+                            </path>
+                            <path fill="#4285F4"
+                                d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z">
+                            </path>
+                            <path fill="#FBBC05"
+                                d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z">
+                            </path>
+                            <path fill="#34A853"
+                                d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z">
+                            </path>
+                            <path fill="none" d="M0 0h48v48H0z"></path>
+                        </svg>
+                    </div>
+                    <span class="gsi-material-button-contents">Googleでサインイン</span>
+                    <span style="display: none;">Googleでサインイン</span>
+                </div>
+            </button>
+            <div class="permission-toggle-wrapper">
+                <div class="sign-in-info" id="permissionInfoPanel" role="dialog" aria-modal="false">
+                    <h3>Googleの権限が必要な理由</h3>
+                    <p class="permission-subtitle">
+                        どのタブでもポップアップでイベントを表示・更新するために、Google Calendar APIを使用し、必要最小限のアクセス権限のみをリクエストします。
+                    </p>
+                    <ul class="permission-list">
+                        <li class="permission-item">
+                            <span>🔐</span>
+                            <div>
+                                <strong>カレンダーの閲覧</strong>
+                                ポップアップで追跡するカレンダーを選択できるように、カレンダーリストを読み込みます。
+                            </div>
+                        </li>
+                        <li class="permission-item">
+                            <span>✍️</span>
+                            <div>
+                                <strong>開いたイベントの編集</strong>
+                                完了ボタンをクリックした時のみ、完了マーカーの追加または削除を行います。
+                            </div>
+                        </li>
+                    </ul>
+                    <p class="sign-in-footnote">イベントの閲覧や保存は行わず、データを共有することもありません。
+                        ご質問は <a href="mailto:support@calcheckr.com">support@calcheckr.com</a> までメールでお問い合わせください。</p>
+                </div>
+                <button id="permissionInfoToggle" class="permission-toggle" type="button" aria-expanded="false"
+                    aria-controls="permissionInfoPanel" title="Googleの権限をリクエストする理由は？">
+                    ?
+                </button>
+            </div>
+        </div>
+
+        <!-- Carousel Onboarding View -->
+        <div id="carouselView" class="view carousel-view">
+            <button id="carouselCloseBtn" class="carousel-close" aria-label="オンボーディングを閉じる">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+            </button>
+            <div id="carouselDots" class="carousel-dots" role="tablist" aria-label="オンボーディングステップ"></div>
+            <button id="carouselPrevBtn" class="carousel-nav-btn" type="button" disabled aria-label="前のステップ">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                </svg>
+            </button>
+            <button id="carouselNextBtn" class="carousel-nav-btn" type="button" aria-label="次のステップ">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 18L15 12L9 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                </svg>
+            </button>
+            <div class="carousel-frame">
+                <div id="carouselTrack" class="carousel-track">
+                    <article class="carousel-slide" aria-hidden="false">
+                        <video autoplay muted loop playsinline>
+                            <source
+                                src="https://storage.googleapis.com/gcal-checker-public-assets/demo-videos/install/how-to-start-premium.mp4"
+                                type="video/mp4">
+                        </video>
+                        <div class="carousel-overlay">
+                            <span class="carousel-label">ステップ1 · ピン留め</span>
+                            <h3 class="carousel-title">ワンクリックで使えるように</h3>
+                            <p class="carousel-text">
+                                Chromeのパズルアイコンを開き、Calendar Checkerの横にあるピンをクリックすると、常に表示されます。
+                            </p>
+                        </div>
+                    </article>
+                    <article class="carousel-slide" aria-hidden="true">
+                        <video autoplay muted loop playsinline>
+                            <source
+                                src="https://storage.googleapis.com/gcal-checker-public-assets/demo-videos/install/free-version-edit-view-mark-as-complete-and-options.mp4"
+                                type="video/mp4">
+                        </video>
+                        <div class="carousel-overlay">
+                            <span class="carousel-label">ステップ2 · 無料機能</span>
+                            <h3 class="carousel-title">イベントを完了としてマーク</h3>
+                            <p class="carousel-text">
+                                任意のイベントを開き、追加された完了ボタンをタップして保存します。打ち消し線は自動的に処理されます。
+                            </p>
+                        </div>
+                    </article>
+                    <article class="carousel-slide" aria-hidden="true">
+                        <video autoplay muted loop playsinline>
+                            <source
+                                src="https://storage.googleapis.com/gcal-checker-public-assets/demo-videos/install/contentView-mark-as-completed.mp4"
+                                type="video/mp4">
+                        </video>
+                        <div class="carousel-overlay">
+                            <span class="carousel-label">ステップ3 · プレミアム</span>
+                            <h3 class="carousel-title">イベントダイアログで完了</h3>
+                            <p class="carousel-text">
+                                プレミアムでは、イベント内に直接クイック完了コントロールが追加されるため、集中を切らさずにタスクを完了できます。
+                            </p>
+                        </div>
+                    </article>
+                    <article class="carousel-slide" aria-hidden="true">
+                        <video autoplay muted loop playsinline>
+                            <source
+                                src="https://storage.googleapis.com/gcal-checker-public-assets/demo-videos/install/popup-view-mark-as-completed.mp4"
+                                type="video/mp4">
+                        </video>
+                        <div class="carousel-overlay">
+                            <span class="carousel-label">ステップ4 · プレミアム</span>
+                            <h3 class="carousel-title">ポップアップビューから完了</h3>
+                            <p class="carousel-text">
+                                カレンダーを開かずにポップアップから直接タスクを完了としてマークできます。日々の素早いレビューに最適です。
+                            </p>
+                        </div>
+                    </article>
+                    <article class="carousel-slide" aria-hidden="true">
+                        <video autoplay muted loop playsinline>
+                            <source
+                                src="https://storage.googleapis.com/gcal-checker-public-assets/demo-videos/install/popup-view-select-calendars.mp4"
+                                type="video/mp4">
+                        </video>
+                        <div class="carousel-overlay">
+                            <span class="carousel-label">ステップ5 · フォーカス</span>
+                            <h3 class="carousel-title">重要なものだけを表示</h3>
+                            <p class="carousel-text">
+                                ポップアップビューで追跡するカレンダーを選択します。気になるイベントのみに集中し、気を散らすものを非表示にします。
+                            </p>
+                        </div>
+                    </article>
+                    <article class="carousel-slide" aria-hidden="true">
+                        <video autoplay muted loop playsinline>
+                            <source
+                                src="https://storage.googleapis.com/gcal-checker-public-assets/demo-videos/install/popup-view-mark-as-completed-available-on-any-tab.mp4"
+                                type="video/mp4">
+                        </video>
+                        <div class="carousel-overlay">
+                            <span class="carousel-label">ステップ6 · どこでも</span>
+                            <h3 class="carousel-title">どのタブでも動作</h3>
+                            <p class="carousel-text">
+                                どこからでもカレンダーにアクセスしてタスクを完了できます。Googleカレンダーを先に開く必要はありません。
+                            </p>
+                        </div>
+                    </article>
+                    <article class="carousel-slide carousel-slide-cta" aria-hidden="true">
+                        <div class="carousel-cta-content">
+                            <h3 class="carousel-title">プレミアム機能をアンロック</h3>
+                            <p class="carousel-text">
+                                ポップアップダッシュボードとクイック完了ボタンに即座にアクセスできます。今すぐアクティベートして、すべてのプレミアム機能を使い始めましょう。
+                            </p>
+                            <button id="carouselActivateBtn" class="carousel-activate-btn" type="button">
+                                プレミアムをアクティベート
+                            </button>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </div>
+
+        <!-- Events View -->
+        <div id="eventsView" class="view events-view">
+            <div class="events-header">
+                <div class="header-actions">
+                    <button id="userOptionsBtn" class="user-options-btn" title="ユーザーオプション">⚙️</button>
+                </div>
+                <div class="date-navigation">
+                    <button id="prevDayBtn" class="nav-btn">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                        </svg>
+                    </button>
+                    <div id="currentDate" class="current-date">読み込み中...</div>
+                    <button id="nextDayBtn" class="nav-btn">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M6 4L10 8L6 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                        </svg>
+                    </button>
+                </div>
+                <div id="eventsCount" class="events-count">0件のイベント</div>
+            </div>
+            <div id="eventsList" class="events-list">
+                <!-- Events will be populated here -->
+            </div>
+        </div>
+
+        <!-- Premium Upgrade View -->
+        <div id="premiumView" class="view premium-view">
+            <div class="premium-header">
+                <button id="premiumUserOptionsBtn" class="premium-options-btn" title="ユーザーオプション">⚙️</button>
+            </div>
+
+            <div class="free-plan-section">
+                <h3 class="free-plan-header">無料プラン · 今すぐ利用可能</h3>
+                <p class="free-plan-text">
+                    Calendar Checkerは長年<strong>無料</strong>で提供されており、これからも変わりません。
+                    <a href="https://calendar.google.com/calendar" target="_blank" rel="noreferrer">Googleカレンダー</a>にアクセスして、
+                    イベントを編集で開き、いつものように完了ボタンをクリックするだけです。<a
+                        href="https://calcheckr.com/#how-it-works" target="_blank" rel="noreferrer">デモを見る</a>。
+                </p>
+            </div>
+
+            <div class="premium-section">
+                <div class="premium-content">
+                    <h2 class="premium-title" id="premiumSectionTitle">プレミアム機能をアンロック</h2>
+                    <p class="premium-description" id="premiumSectionDescription">
+                        強力な機能でカレンダーをもっと活用しましょう
+                    </p>
+
+                    <div class="premium-features">
+                        <div class="premium-feature">
+                            <span class="feature-icon">✅</span>
+                            <div class="feature-text">
+                                <div class="feature-title">ワンクリックでイベントを完了</div>
+                                <div class="feature-desc">イベントダイアログから直接チェックマークを追加</div>
+                            </div>
+                        </div>
+                        <div class="premium-feature">
+                            <span class="feature-icon">📊</span>
+                            <div class="feature-text">
+                                <div class="feature-title">日次イベントを表示</div>
+                                <div class="feature-desc">ポップアップビューで日々のイベントを確認</div>
+                            </div>
+                        </div>
+                        <div class="premium-feature">
+                            <span class="feature-icon">🔄</span>
+                            <div class="feature-text">
+                                <div class="feature-title">どのタブでもイベントをマーク</div>
+                                <div class="feature-desc">Googleカレンダーのページを開く必要なし</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="premiumStartTrialBtn" class="premium-cta-btn hidden">
+                        14日間無料トライアルを開始
+                    </button>
+
+                    <button id="premiumUpgradeBtn" class="premium-cta-btn hidden">
+                        プレミアムにアップグレード
+                    </button>
+
+                    <p class="premium-footnote" id="premiumFootnote"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Options View -->
+        <div id="userOptionsView" class="view user-options-view">
+            <div class="user-options-header">
+                <div class="user-options-header-left">
+                    <button id="backBtn" class="back-btn">←</button>
+                    <h2 class="user-options-title">ユーザーオプション</h2>
+                </div>
+                <div class="user-options-header-right">
+                    <button class="user-options-user-menu-btn" id="userOptionsUserMenuBtn">
+                        <span class="user-options-user-email" id="userOptionsUserEmail"></span>
+                        <span class="user-options-user-menu-icon">▼</span>
+                    </button>
+                    <div class="user-options-user-dropdown" id="userOptionsUserDropdown">
+                        <button class="user-options-dropdown-item" id="userOptionsLogoutBtn">
+                            🚪 サインアウト
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tabs-container">
+                <div class="tabs-sidebar">
+                    <button id="tabSubscription" class="tab-button active" title="サブスクリプション">💳</button>
+                    <button id="tabPreferences" class="tab-button" title="環境設定"
+                        style="display: none;">⚙️</button>
+                    <button id="tabSecurity" class="tab-button" title="セキュリティ">🔒</button>
+                    <button id="tabFaq" class="tab-button" title="ヘルプとFAQ">❓</button>
+                </div>
+
+                <div class="tabs-content">
+                    <div id="tabContentSubscription" class="tab-content active">
+                        <h3 class="tab-content-header">💳 サブスクリプション</h3>
+                        <div id="subscriptionStatus">
+                            <div class="subscription-loading">サブスクリプション状態を読み込み中...</div>
+                        </div>
+                    </div>
+
+                    <div id="tabContentPreferences" class="tab-content" style="display: none;">
+                        <h3 class="tab-content-header">⚙️ 環境設定</h3>
+                        <div class="section-title">選択したカレンダー</div>
+                        <div id="calendarsList" class="calendars-list">
+                            <div class="loading-calendars">カレンダーを読み込み中...</div>
+                        </div>
+                        <div class="custom-slots-section">
+                            <div class="section-title">カスタムチェックマークスロット</div>
+                            <p class="coming-soon-label">近日公開 — 最大5つのカスタムマーカーを選択可能</p>
+                        </div>
+                    </div>
+
+                    <div id="tabContentSecurity" class="tab-content">
+                        <h3 class="tab-content-header">🔒 セキュリティ</h3>
+                        <div class="security-actions">
+                            <button id="signOutAllDevicesBtn" class="danger">
+                                🔐 全てのデバイスからサインアウトしてアプリアクセスを取り消す
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="tabContentFaq" class="tab-content">
+                        <h3 class="tab-content-header">❓ ヘルプとFAQ</h3>
+                        <div class="faq-section">
+                            <details class="faq-item">
+                                <summary class="faq-question">イベントダイアログでチェックマークボタンが機能しない
+                                </summary>
+                                <div class="faq-answer">
+                                    アクティブなサブスクリプションがあり、ポップアップのチェックマーク機能が動作することを確認してください。
+                                    イベントをマークした後に遅延が発生することがあります。
+                                    右下に緑色のトースト確認が表示される場合、Google Calendar APIが更新を確認したことを意味します。ただし、Googleカレンダーのユーザーインターフェイスの同期が遅れる場合があります。
+                                    いつでも同期される可能性があります。残念ながら、ページの更新以外に強制的に更新する方法はまだ見つかっていません。
+                                    緑色のトーストをアクションが正常に完了した確認として扱うことができます。
+                                    また、このポップアップビューはAPIから直接イベントデータを取得するため、リアルタイムのステータスを表示します。
+                                </div>
+                            </details>
+                            <details class="faq-item">
+                                <summary class="faq-question">「選択したカレンダー」リストに特定のカレンダーが表示されないのはなぜですか？</summary>
+                                <div class="faq-answer">
+                                    リストには、あなたが所有者であるか、編集アクセス権を持っているカレンダーのみが表示されます。
+                                </div>
+                            </details>
+                        </div>
+                        <p class="faq-contact">
+                            まだ問題が解決しない、またはフィードバックがある場合は、
+                            <a href="mailto:support@calcheckr.com">support@calcheckr.com</a> までご連絡ください。すぐに返信いたします。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification -->
+        <div id="notification" class="notification"></div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+
+</html>

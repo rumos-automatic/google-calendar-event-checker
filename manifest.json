@@ -1,0 +1,49 @@
+{
+   "action": {
+      "default_icon": {
+         "128": "icons/icon128.png",
+         "16": "icons/icon16.png",
+         "48": "icons/icon48.png"
+      },
+      "default_popup": "popup.html"
+   },
+   "background": {
+      "service_worker": "background.js"
+   },
+   "content_scripts": [ {
+      "js": [ "sentry.7.100.1.bundle.min.js", "contentScript.js" ],
+      "matches": [ "https://calendar.google.com/calendar/*" ],
+      "run_at": "document_idle"
+   } ],
+   "description": "Mark events as completed or cancelled in Google Calendar with emojis or strikethroughs.",
+   "externally_connectable": {
+      "matches": [ "https://*.calcheckr.com/*" ]
+   },
+   "homepage_url": "https://calcheckr.com",
+   "host_permissions": [
+      "https://calendar.google.com/*",
+      "https://www.googleapis.com/*"
+   ],
+   "oauth2": {
+      "client_id": "51083860430-s3d5b5s4gbbmibe5bnfe7asv82j0lpkb.apps.googleusercontent.com",
+      "scopes": [
+         "https://www.googleapis.com/auth/calendar.events"
+      ]
+   },
+   "icons": {
+      "128": "icons/icon128.png",
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png"
+   },
+   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqqgBDeysXSxqwS/DYsAgtLQhI1tvAbi36yS/7QWkKrytdf6eA7VQ+RcJe4Wel0KBUplToOnjKljOrDGUlez6VITmp/S+TJ+GNcJQUGGv8IDPy3/TOmJR/CVVfPxIiCbZzSxTfLNhhZgumor7dHE9/6BFgBAlPycTq71ogeeGgLTERgTdt7p6nPeaBqiwLvcASbPoZ8JDfWC+Ljpasepv/qHWWIaTBIOUI4XBGEByGO3kApWGx7Sl15rirG3wk9J9rZMDFfKEBuNFnEiZ8Zc3DjMURqS8p6uqAS1MbE3Eu5Q7TeKnX+BcRfa43tCWXS3yq7TRiStdpFVMQAxrdAEIrQIDAQAB",
+   "manifest_version": 3,
+   "name": "Google Calendar Event Checker",
+   "options_ui": {
+      "open_in_tab": false,
+      "page": "options.html"
+   },
+   "permissions": [ "storage", "identity" ],
+   "short_name": "gcal-checker",
+   "update_url": "https://clients2.google.com/service/update2/crx",
+   "version": "2.0.1"
+}
