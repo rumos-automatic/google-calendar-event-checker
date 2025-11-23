@@ -1,5 +1,93 @@
 # Changelog
 
+## [3.0.0] - 2025-11-23
+
+### 🎉 ポップアップUI完全サーバーレス化
+
+バックエンドサーバー依存を完全に排除し、ポップアップから直接Google Calendar APIを呼び出す実装が完了しました。
+
+#### ✨ 新機能
+
+1. **イベント一覧の直接API取得**
+   - `listEventsDirectAPI(date, timeZone)` 実装
+   - 複数カレンダー対応（`selectedCalendarIds`から自動取得）
+   - タイムゾーン対応（ユーザーのタイムゾーンで日付範囲計算）
+   - イベントを開始時刻で自動ソート
+
+2. **カレンダー一覧の直接API取得**
+   - `listCalendarsDirectAPI()` 実装
+   - ユーザーの全カレンダーを取得
+
+3. **クライアント側完了検出ロジック**
+   - popup.jsで `isEventCompleted(event)` ヘルパー関数追加
+   - キャッシュされたイベントでも即座に正しいチェックボックス状態を表示
+   - 視覚的なフラッシュを完全解消
+
+#### 🔧 技術的変更
+
+##### background.js
+- `listEventsDirectAPI(date, timeZone)` 追加（行179-264）
+  - Google Calendar API v3 `/events` エンドポイント使用
+  - 複数カレンダーからイベントを並列取得
+  - 各イベントに `calendarId` と `isCompleted` プロパティを自動追加
+- `listCalendarsDirectAPI()` 追加（行266-304）
+  - Google Calendar API v3 `/calendarList` エンドポイント使用
+- メッセージハンドラー追加
+  - `listEventsDirect`: イベント一覧取得
+  - `listCalendarsDirect`: カレンダー一覧取得
+- `parseEventFromHtmlLink()` 修正
+  - `@`チェックを削除し、すべての`calendarId`形式をサポート
+  - `eventId_primary`などの形式を正しく解析
+
+##### popup.js
+- `isEventCompleted(event)` メソッド追加
+  - タイトルの✅チェックマーク検出
+  - 取り消し線（`\u0336`）検出
+  - キャッシュイベントでも即座に完了状態を判定
+- アクション名変更
+  - `action: 'listEvents'` → `action: 'listEventsDirect'`
+  - `action: 'listCalendars'` → `action: 'listCalendarsDirect'`
+  - `action: 'toggleEventCompletion'` → `action: 'modifyEventDirect'`
+- レンダリング最適化
+  - `createEventElement()`: `this.isEventCompleted(e)` 使用
+  - `updateEventItem()`: `this.isEventCompleted(e)` 使用
+
+#### 🐛 バグ修正
+
+1. **calendarIdが`undefined`になる問題**
+   - Google Calendar APIレスポンスに`calendarId`が含まれないため、手動で追加
+   - 各イベントに取得元カレンダーIDを設定
+
+2. **eventIdの解析エラー**
+   - `parseEventFromHtmlLink()`の`@`チェックを削除
+   - `eventId_primary`形式を正しく`eventId`と`calendarId`に分割
+
+3. **チェックボックス表示遅延**
+   - キャッシュされたイベントでも即座に完了状態を検出
+   - background.jsの`isCompleted`プロパティに依存せず、クライアント側で計算
+
+#### 🚀 パフォーマンス改善
+
+- キャッシュイベント表示時の視覚的フラッシュ解消
+- チェックボックス状態の即座反映（バックグラウンド更新待ち不要）
+- ネットワークラウンドトリップ削減
+
+#### 🎨 UI/UX改善
+
+- ✅ 既に完了済みのイベントは最初からチェック済み表示
+- ✅ キャッシュ読み込み時の状態遅延なし
+- ✅ スムーズなチェックボックス動作
+
+#### 🧪 テスト結果
+
+- ✅ イベント一覧取得（複数カレンダー対応）
+- ✅ カレンダー一覧取得
+- ✅ イベント完了マーク（ポップアップから）
+- ✅ 既存完了イベントの自動検出
+- ✅ キャッシュとフレッシュデータの一貫性
+
+---
+
 ## [Unreleased] - 2025-01-23
 
 ### Added - クライアントサイドGoogle Calendar API直接呼び出し機能
